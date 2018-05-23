@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 
+# All dimensions based on ANSI/NEMA WD 6-2016
+#
+# For receptacles, the slot outlines match the *minimum* dimensions given
+# in the standard.  For plugs, the prong outlines match the *maximum*
+# dimensions given.
+#
+# The circles around the connectors are sized according to the dimensions
+# for flanged inlets and connector bodies on page 16.
+
 import math
 from enum import Enum
 
