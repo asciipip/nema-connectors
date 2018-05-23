@@ -27,6 +27,43 @@ class SquareConductor:
                             (self.width, self.height),
                             fill='black')
 
+class LConductor:
+    """A conductor that forms roughly an "L" shape.
+
+    `start` and `end` must be (x, y) tuples.  `sweep_dir` is either '+' or
+    '-', mirroring the sweep flag on the SVG Path elliptical arc commands.
+    """
+    def __init__(self, width, start, end, sweep_dir):
+        if sweep_dir not in ['+', '-']:
+            raise ValueError('Invalid sweep_dir: {}'.format(sweep_dir))
+        self.width = width
+        self.start = start
+        self.end = end
+        self.sweep_dir = sweep_dir
+        self.x_sign = math.copysign(1, self.end[0] - self.start[0])
+        self.y_sign = math.copysign(1, self.end[1] - self.start[1])
+        if self.x_sign == self.y_sign:
+            self.x_first = sweep_dir == '+'
+        else:
+            self.x_first = sweep_dir == '-'
+
+    def draw(self, drawing):
+        path = drawing.path(fill='none', stroke='black', stroke_width=self.width)
+        path.push('M', self.start)
+        if self.x_first:
+            path.push('h', self.end[0] - self.start[0] - self.x_sign * self.width/2)
+        else:
+            path.push('v', self.end[1] - self.start[1] - self.y_sign * self.width/2)
+        path.push_arc(
+            (self.width/2 * self.x_sign, self.width/2 * self.y_sign), 0,
+            self.width/2, large_arc=False, absolute=False,
+            angle_dir=self.sweep_dir)
+        if self.x_first:
+            path.push('V', self.end[1])
+        else:
+            path.push('H', self.end[0])
+        return path
+
 class NEMABase:
     def __init__(self):
         self.receptacle_diameter = None
@@ -103,6 +140,35 @@ class NEMA_1_15(NEMABase):
             ),
         }
 
+class NEMA_1_20(NEMABase):
+    def __init__(self):
+        super().__init__()
+        
+        self.name = '1-20'
+
+        self.plug_diameter = 1.550
+        
+        conductor_spacing = 0.500
+
+        prong_width = 0.060
+        neutral_width = 0.260
+        neutral_height = 0.165
+        line_height = 0.260
+
+        neutral_start = (0 - conductor_spacing/2 - (neutral_width - prong_width/2), 0)
+        neutral_end = (0 - conductor_spacing/2, 0 + (neutral_height - prong_width/2))
+        self.conductors = {
+            ConductorType.neutral: (
+                None,
+                LConductor(prong_width, neutral_start, neutral_end, '+'),
+            ),
+            ConductorType.lineX: (
+                None,
+                SquareConductor(prong_width, line_height, x=conductor_spacing/2),
+            ),
+        }
+
 if __name__ == '__main__':
     NEMA_1_15().save()
+    NEMA_1_20().save()
     
