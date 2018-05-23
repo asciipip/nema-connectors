@@ -15,6 +15,49 @@ class ConductorType(Enum):
     lineY = 'Line (Y)'
     lineZ = 'Line (Z)'
 
+class DConductor:
+    """A conductor whose outline forms a "D" shape.
+
+    The curve of the "D" is done at the positive end of the narrowest
+    dimension.  If the dimensions are equal, it is done at the positive
+    end of the x dimension.  It may be repositioned by giving a `rotation`
+    in degrees.
+    """
+    def __init__(self, width, height, x=0, y=0, rotation=0):
+        self.width = width
+        self.height = height
+        self.x = x
+        self.y = y
+        self.rotation = rotation
+
+    def draw(self, drawing):
+        path = drawing.path(fill='black')
+        if self.rotation == 0:
+            x_offset = self.x
+            y_offset = self.y
+        else:
+            x_offset = 0
+            y_offset = 0
+            if self.y == 0:
+                path['transform'] = 'translate({}) rotate({})'.format(self.x, self.rotation)
+            else:
+                path['transform'] = 'translate({} {}) rotate({})'.format(
+                    self.x, self.y, self.rotation)
+
+        path.push('M', (x_offset - self.width/2, y_offset - self.height/2))
+        if self.width >= self.height:
+            side_length = self.width - self.height/2
+            path.push('h', side_length)
+            path.push_arc((0, self.height), 0, self.height/2, angle_dir='+')
+            path.push('h', -side_length)
+        else:
+            side_length = self.height - self.width/2
+            path.push('v', side_length)
+            path.push_arc((self.width, 0), 0, self.width/2, angle_dir='-')
+            path.push('v', -side_length)
+        path.push('Z')
+        return path
+
 class IConductor:
     def __init__(self, width, height, x=0, y=0):
         self.width = width
@@ -62,49 +105,6 @@ class LConductor:
             path.push('V', self.end[1])
         else:
             path.push('H', self.end[0])
-        return path
-
-class DConductor:
-    """A conductor whose outline forms a "D" shape.
-
-    The curve of the "D" is done at the positive end of the narrowest
-    dimension.  If the dimensions are equal, it is done at the positive
-    end of the x dimension.  It may be repositioned by giving a `rotation`
-    in degrees.
-    """
-    def __init__(self, width, height, x=0, y=0, rotation=0):
-        self.width = width
-        self.height = height
-        self.x = x
-        self.y = y
-        self.rotation = rotation
-
-    def draw(self, drawing):
-        path = drawing.path(fill='black')
-        if self.rotation == 0:
-            x_offset = self.x
-            y_offset = self.y
-        else:
-            x_offset = 0
-            y_offset = 0
-            if self.y == 0:
-                path['transform'] = 'translate({}) rotate({})'.format(self.x, self.rotation)
-            else:
-                path['transform'] = 'translate({} {}) rotate({})'.format(
-                    self.x, self.y, self.rotation)
-
-        path.push('M', (x_offset - self.width/2, y_offset - self.height/2))
-        if self.width >= self.height:
-            side_length = self.width - self.height/2
-            path.push('h', side_length)
-            path.push_arc((0, self.height), 0, self.height/2, angle_dir='+')
-            path.push('h', -side_length)
-        else:
-            side_length = self.height - self.width/2
-            path.push('v', side_length)
-            path.push_arc((self.width, 0), 0, self.width/2, angle_dir='-')
-            path.push('v', -side_length)
-        path.push('Z')
         return path
 
 class OConductor:
