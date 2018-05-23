@@ -64,6 +64,59 @@ class LConductor:
             path.push('H', self.end[0])
         return path
 
+class DConductor:
+    """A conductor whose outline forms a "D" shape.
+
+    The curve of the "D" is done at the positive end of the narrowest
+    dimension.  If the dimensions are equal, it is done at the positive
+    end of the x dimension.  It may be repositioned by giving a `rotation`
+    in degrees.
+    """
+    def __init__(self, width, height, x=0, y=0, rotation=0):
+        self.width = width
+        self.height = height
+        self.x = x
+        self.y = y
+        self.rotation = rotation
+
+    def draw(self, drawing):
+        path = drawing.path(fill='black')
+        if self.rotation == 0:
+            x_offset = self.x
+            y_offset = self.y
+        else:
+            x_offset = 0
+            y_offset = 0
+            if self.y == 0:
+                path['transform'] = 'translate({}) rotate({})'.format(self.x, self.rotation)
+            else:
+                path['transform'] = 'translate({} {}) rotate({})'.format(
+                    self.x, self.y, self.rotation)
+
+        path.push('M', (x_offset - self.width/2, y_offset - self.height/2))
+        if self.width >= self.height:
+            side_length = self.width - self.height/2
+            path.push('h', side_length)
+            path.push_arc((0, self.height), 0, self.height/2, angle_dir='+')
+            path.push('h', -side_length)
+        else:
+            side_length = self.height - self.width/2
+            path.push('v', side_length)
+            path.push_arc((self.width, 0), 0, self.width/2, angle_dir='-')
+            path.push('v', -side_length)
+        path.push('Z')
+        return path
+
+class OConductor:
+    """A conductor whose shape is a circle."""
+    def __init__(self, diameter, x=0, y=0):
+        self.radius = diameter / 2
+        self.x = x
+        self.y = y
+
+    def draw(self, drawing):
+        return drawing.circle((self.x, self.y), self.radius, fill='black')
+    
 class NEMABase:
     def __init__(self):
         self.receptacle_diameter = None
@@ -168,7 +221,51 @@ class NEMA_1_20(NEMABase):
             ),
         }
 
+class NEMA_5_15(NEMABase):
+    def __init__(self):
+        super().__init__()
+        
+        self.name = '5-15'
+
+        self.receptacle_diameter = 1.531
+        self.plug_diameter = 1.550
+        
+        conductor_spacing = 0.500
+        lower_offset = 0.125
+        upper_offset = 0.468
+        
+        slot_width = 0.075
+        neutral_slot_height = 0.330
+        line_slot_height = 0.265
+        ground_slot_dims = 0.205
+
+        prong_width = 0.060
+        neutral_prong_height = 0.322
+        line_prong_height = 0.260
+        ground_prong_dims = 0.190
+        
+        self.conductors = {
+            ConductorType.neutral: (
+                SquareConductor(slot_width, neutral_slot_height,
+                                x=conductor_spacing/2, y=lower_offset),
+                SquareConductor(prong_width, neutral_prong_height,
+                                x=-conductor_spacing/2, y=lower_offset)
+            ),
+            ConductorType.ground: (
+                DConductor(ground_slot_dims, ground_slot_dims,
+                           y=lower_offset - upper_offset, rotation=90),
+                OConductor(ground_prong_dims, y=lower_offset - upper_offset),
+            ),
+            ConductorType.lineX: (
+                SquareConductor(slot_width, line_slot_height,
+                                x=-conductor_spacing/2, y=lower_offset),
+                SquareConductor(prong_width, line_prong_height,
+                                x=conductor_spacing/2, y=lower_offset)
+            ),
+        }
+
 if __name__ == '__main__':
     NEMA_1_15().save()
     NEMA_1_20().save()
+    NEMA_5_15().save()
     
