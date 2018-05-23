@@ -502,9 +502,74 @@ class NEMA_L5_30(NEMABase):
             ),
         }
 
+class NEMA_L6_20(NEMABase):
+    def __init__(self):
+        super().__init__()
+        
+        self.name = 'L6-20'
+
+        self.receptacle_diameter = 1.860
+        self.plug_diameter = 1.880
+
+        conductor_radius = 0.437
+        slot_width = 0.075
+        prong_width = 0.060
+
+        line1_angle_slot_end = 152
+        line1_angle_slot_width = 57
+        line2_angle_slot_end = 262
+        line2_angle_slot_width = 42.5
+
+        ground_angle_slot_start = -25
+        ground_hook_slot_outer_y = 0.220
+        ground_hook_slot_height = 0.100
+        ground_hook_slot_width = 0.105
+
+        line1_angle_prong_end = 149.5
+        line1_angle_prong_width = 52.5
+        line2_angle_prong_end = 259.5
+        line2_angle_prong_width = 38
+
+        ground_angle_prong_start = -22.5
+        ground_hook_prong_outer_y = 0.200
+        ground_hook_prong_height = prong_width
+        ground_hook_prong_width = 0.094
+        
+        self.conductors = {
+            ConductorType.lineX: (
+                ArcConductor(slot_width, conductor_radius,
+                             line1_angle_slot_end - 180,
+                             line1_angle_slot_end - line1_angle_slot_width - 180),
+                ArcConductor(prong_width, conductor_radius,
+                             0 - line1_angle_prong_end,
+                             0 - line1_angle_prong_end + line1_angle_prong_width),
+            ),
+            ConductorType.ground: (
+                ArcConductorWithHook(slot_width, conductor_radius,
+                                     ground_angle_slot_start - 180, -180,
+                                     ground_hook_slot_outer_y,
+                                     -ground_hook_slot_width,
+                                     ground_hook_slot_height),
+                ArcConductorWithHook(prong_width, conductor_radius,
+                                     -ground_angle_prong_start, 0,
+                                     -ground_hook_prong_outer_y,
+                                     -ground_hook_prong_width,
+                                     ground_hook_prong_height),
+            ),
+            ConductorType.lineY: (
+                ArcConductor(slot_width, conductor_radius,
+                             line2_angle_slot_end - 180,
+                             line2_angle_slot_end - line2_angle_slot_width - 180),
+                ArcConductor(prong_width, conductor_radius,
+                             0 - line2_angle_prong_end,
+                             0 - line2_angle_prong_end + line2_angle_prong_width),
+            ),
+        }
+
 if __name__ == '__main__':
     NEMA_1_15().save()
     NEMA_1_20().save()
     NEMA_5_15().save()
     NEMA_5_20().save()
     NEMA_L5_30().save()
+    NEMA_L6_20().save()
