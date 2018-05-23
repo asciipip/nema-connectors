@@ -27,13 +27,12 @@ class SquareConductor:
                             (self.width, self.height),
                             fill='black')
 
-
 class NEMABase:
     def __init__(self):
         self.receptacle_diameter = None
         self.plug_diameter = None
         
-    def draw(self, diameter, conductors):
+    def draw(self, diameter, conductors, outline):
         drawing_width = diameter + OUTLINE_WIDTH * 2
         drawing = svgwrite.Drawing(size=(round(drawing_width * SCALE + 0.5),
                                          round(drawing_width * SCALE + 0.5)),
@@ -41,8 +40,12 @@ class NEMABase:
         g = drawing.g(transform='translate({0} {0})'.format(drawing_width / 2))
         drawing.add(g)
 
-        g.add(drawing.circle(r=diameter/2, fill='white', stroke='black',
-                             stroke_width=OUTLINE_WIDTH))
+        background = drawing.circle(r=diameter/2, fill='white')
+        if outline:
+            background['stroke'] = 'black'
+            background['stroke-width'] = OUTLINE_WIDTH
+        g.add(background)
+        
         for conductor in conductors.values():
             g.add(conductor.draw(drawing))
         
@@ -52,13 +55,17 @@ class NEMABase:
         if self.receptacle_diameter is None:
             return None
         else:
-            return self.draw(self.receptacle_diameter, {k: v[0] for k, v in self.conductors.items()})
+            return self.draw(self.receptacle_diameter,
+                             {k: v[0] for k, v in self.conductors.items()},
+                             True)
 
     def draw_plug(self):
         if self.plug_diameter is None:
             return None
         else:
-            return self.draw(self.plug_diameter, {k: v[1] for k, v in self.conductors.items()})
+            return self.draw(self.plug_diameter,
+                             {k: v[1] for k, v in self.conductors.items()},
+                             False)
 
     def save(self):
         if self.receptacle_diameter is not None:
