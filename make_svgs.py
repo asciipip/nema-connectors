@@ -9,6 +9,7 @@
 # The circles around the connectors are sized according to the dimensions
 # for flanged inlets and connector bodies on page 16.
 
+import cmath
 import math
 from enum import Enum
 
@@ -153,6 +154,97 @@ class TConductor:
         path.push('v', -(self.vertical_length - self.width/2))
         return path
 
+class ArcConductor:
+    """A conductor that follows an arc segment on a circle centered on the
+    connector.
+
+    Angle measurements are in degrees measured from the positive x axis.
+    """
+    def __init__(self, width, radius, start_angle, end_angle):
+        self.width = width
+        self.radius = radius
+        start_rad = start_angle / 180 * math.pi
+        end_rad = end_angle / 180 * math.pi
+        start_complex = cmath.rect(radius, start_rad)
+        end_complex = cmath.rect(radius, end_rad)
+        self.start = (start_complex.real, start_complex.imag)
+        self.end = (end_complex.real, end_complex.imag)
+        if start_angle < end_angle:
+            self.angle_dir = '+'
+        else:
+            self.angle_dir = '-'
+
+    def draw(self, drawing):
+        path = drawing.path(fill='none', stroke='black', stroke_width=self.width)
+        path.push('M', self.start)
+        # Note that for our purposes we can assume we're always dealing
+        # with the small arc, because there aren't any conductors that are
+        # more than 180 degrees wide.
+        path.push_arc(self.end, 0, self.radius, large_arc=False, absolute=True,
+                      angle_dir=self.angle_dir)
+        return path
+
+class ArcConductorWithHook:
+    """A conductor that follows an arc segment but also has a hook.
+
+    Angle measurements are in degrees measured from the positive x axis.
+    `hook_angle` gives the angle of a line to which the hook is parallel.
+    `hook_outer_offset` is the distance from that line to the outer edge
+    of the hook.  `hook_length` is measured along the inner edge of the
+    hook.  Positive lengths indicate that the hook lies outside the arc,
+    and vice versa.
+
+    """
+    def __init__(self, width, radius, start_angle, hook_angle, hook_outer_offset, hook_length, hook_width=None):
+        self.width = width
+        self.radius = radius
+        self.start_angle = start_angle / 180 * math.pi
+        self.hook_angle = hook_angle / 180 * math.pi
+        self.hook_outer_offset = hook_outer_offset
+        self.hook_length = hook_length
+        if hook_width is None:
+            self.hook_width = width
+        else:
+            self.hook_width = hook_width
+        self.hook_width = math.copysign(self.hook_width, hook_outer_offset)
+
+    def draw(self, drawing):
+        outer_radius = self.radius + self.width/2
+        inner_radius = self.radius - self.width/2
+        
+        start_inner = cmath.rect(inner_radius, self.start_angle)
+        start_outer = cmath.rect(outer_radius, self.start_angle)
+
+        angle_to_end_outer = math.asin(self.hook_outer_offset / outer_radius)
+        end_outer = cmath.rect(outer_radius, self.hook_angle + angle_to_end_outer)
+        angle_to_end_inner = math.asin((self.hook_outer_offset - self.hook_width) / inner_radius)
+        end_inner = cmath.rect(inner_radius, self.hook_angle + angle_to_end_inner)
+        if self.hook_length < 0:
+            vector_to_hook_inner_corner = cmath.rect(self.hook_length, self.hook_angle)
+            hook_inner_corner = end_inner + vector_to_hook_inner_corner
+            vector_to_hook_outer_corner = cmath.rect(self.hook_width, self.hook_angle + math.pi / 2)
+            hook_outer_corner = hook_inner_corner + vector_to_hook_outer_corner
+        else:
+            assert False
+            
+        path = drawing.path(fill='black')
+        path.push('M', (start_outer.real, start_outer.imag))
+        path.push_arc((end_outer.real, end_outer.imag), 0, outer_radius,
+                      large_arc=False, absolute=True,
+                      angle_dir='+' if self.hook_outer_offset > 0 else '-')
+        if self.hook_length < 0:
+            path.push('L', (hook_outer_corner.real, hook_outer_corner.imag))
+            path.push('L', (hook_inner_corner.real, hook_inner_corner.imag))
+        else:
+            assert False
+        path.push('L', (end_inner.real, end_inner.imag))
+        path.push_arc((start_inner.real, start_inner.imag), 0, inner_radius,
+                      large_arc=False, absolute=True,
+                      angle_dir='-' if self.hook_outer_offset > 0 else '+')
+        path.push('Z')
+
+        return path
+    
 class NEMABase:
     def __init__(self):
         self.receptacle_diameter = None
@@ -346,9 +438,73 @@ class NEMA_5_20(NEMABase):
             ),
         }
 
+class NEMA_L5_30(NEMABase):
+    def __init__(self):
+        super().__init__()
+        
+        self.name = 'L5-30'
+
+        self.receptacle_diameter = 1.860
+        self.plug_diameter = 1.880
+
+        conductor_radius = 0.500
+        slot_width = 0.093
+        prong_width = 0.070
+
+        neutral_angle_slot_end = 127
+        neutral_angle_slot_width = 42.5
+        line_angle_slot_end = 242
+        line_angle_slot_width = 52
+
+        ground_angle_slot_start = -25
+        ground_hook_slot_outer_y = 0.248
+        ground_hook_slot_height = 0.114
+        ground_hook_slot_width = 0.105
+
+        neutral_angle_prong_end = 124.5
+        neutral_angle_prong_width = 38
+        line_angle_prong_end = 239.5
+        line_angle_prong_width = 47.5
+
+        ground_angle_prong_start = -22.5
+        ground_hook_prong_outer_y = 0.220
+        ground_hook_prong_height = prong_width
+        ground_hook_prong_width = 0.100
+        
+        self.conductors = {
+            ConductorType.neutral: (
+                ArcConductor(slot_width, conductor_radius,
+                             neutral_angle_slot_end - 180,
+                             neutral_angle_slot_end - neutral_angle_slot_width - 180),
+                ArcConductor(prong_width, conductor_radius,
+                             0 - neutral_angle_prong_end,
+                             0 - neutral_angle_prong_end + neutral_angle_prong_width),
+            ),
+            ConductorType.ground: (
+                ArcConductorWithHook(slot_width, conductor_radius,
+                                     ground_angle_slot_start - 180, -180,
+                                     ground_hook_slot_outer_y,
+                                     -ground_hook_slot_width,
+                                     ground_hook_slot_height),
+                ArcConductorWithHook(prong_width, conductor_radius,
+                                     -ground_angle_prong_start, 0,
+                                     -ground_hook_prong_outer_y,
+                                     -ground_hook_prong_width,
+                                     ground_hook_prong_height),
+            ),
+            ConductorType.lineX: (
+                ArcConductor(slot_width, conductor_radius,
+                             line_angle_slot_end - 180,
+                             line_angle_slot_end - line_angle_slot_width - 180),
+                ArcConductor(prong_width, conductor_radius,
+                             0 - line_angle_prong_end,
+                             0 - line_angle_prong_end + line_angle_prong_width),
+            ),
+        }
+
 if __name__ == '__main__':
     NEMA_1_15().save()
     NEMA_1_20().save()
     NEMA_5_15().save()
     NEMA_5_20().save()
-    
+    NEMA_L5_30().save()
