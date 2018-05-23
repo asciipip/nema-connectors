@@ -116,7 +116,34 @@ class OConductor:
 
     def draw(self, drawing):
         return drawing.circle((self.x, self.y), self.radius, fill='black')
-    
+
+class TConductor:
+    """A conductor whose shape is an upper-case "T".
+
+    `x` and `y` give the center of the intersection of the lines.
+    `vertical_length` is measured from the top of the crossbar to the far
+    end of the vertical bar.  The vertical bar extends downwards (negative
+    y direction) from the intersection.  `rotation` (in degrees) may be
+    used to reorient the T.
+    """
+    def __init__(self, width, crossbar_length, vertical_length, x=0, y=0, rotation=0):
+        self.width = width
+        self.crossbar_length = crossbar_length
+        self.vertical_length = vertical_length
+        self.x = x
+        self.y = y
+        self.rotation = rotation
+
+    def draw(self, drawing):
+        path = drawing.path(fill='none', stroke='black', stroke_width=self.width)
+        if self.rotation != 0:
+            path['transform'] = 'rotate({} {},{})'.format(self.rotation, self.x, self.y)
+        path.push('M', (self.x - self.crossbar_length/2, self.y))
+        path.push('h', self.crossbar_length)
+        path.push('m', (-self.crossbar_length/2, 0))
+        path.push('v', -(self.vertical_length - self.width/2))
+        return path
+
 class NEMABase:
     def __init__(self):
         self.receptacle_diameter = None
@@ -264,8 +291,56 @@ class NEMA_5_15(NEMABase):
             ),
         }
 
+class NEMA_5_20(NEMABase):
+    def __init__(self):
+        super().__init__()
+        
+        self.name = '5-20'
+
+        self.receptacle_diameter = 1.531
+        self.plug_diameter = 1.550
+        
+        receptacle_conductor_spacing = 0.500
+        plug_line_offset = 0.250
+        plug_neutral_offset = 0.609
+        lower_offset = 0.125
+        upper_offset = 0.468
+        
+        slot_width = 0.075
+        neutral_slot_height = 0.330
+        neutral_slot_width = 0.290
+        line_slot_height = 0.265
+        ground_slot_dims = 0.205
+
+        prong_width = 0.060
+        prong_length = 0.260
+        ground_prong_dims = 0.190
+        
+        # width, crossbar_length, vertical_length, x=0, y=0, rotation=0
+        self.conductors = {
+            ConductorType.neutral: (
+                TConductor(slot_width, neutral_slot_height, neutral_slot_width,
+                           x=receptacle_conductor_spacing/2, y=lower_offset,
+                           rotation=90),
+                SquareConductor(prong_length, prong_width, y=lower_offset,
+                                x=plug_line_offset - plug_neutral_offset)
+            ),
+            ConductorType.ground: (
+                DConductor(ground_slot_dims, ground_slot_dims,
+                           y=lower_offset - upper_offset, rotation=90),
+                OConductor(ground_prong_dims, y=lower_offset - upper_offset),
+            ),
+            ConductorType.lineX: (
+                SquareConductor(slot_width, line_slot_height,
+                                x=-receptacle_conductor_spacing/2, y=lower_offset),
+                SquareConductor(prong_width, prong_length,
+                                x=plug_line_offset, y=lower_offset)
+            ),
+        }
+
 if __name__ == '__main__':
     NEMA_1_15().save()
     NEMA_1_20().save()
     NEMA_5_15().save()
+    NEMA_5_20().save()
     
