@@ -15,7 +15,6 @@ from enum import Enum
 import svgwrite
 
 OUTLINE_WIDTH = 0.01
-SCALE = 100
 
 class ConductorType(Enum):
     ground = 'Ground'
@@ -161,8 +160,8 @@ class NEMABase:
         
     def draw(self, diameter, conductors, outline):
         drawing_width = diameter + OUTLINE_WIDTH * 2
-        drawing = svgwrite.Drawing(size=(round(drawing_width * SCALE + 0.5),
-                                         round(drawing_width * SCALE + 0.5)),
+        dim_str = '{}in'.format(drawing_width)
+        drawing = svgwrite.Drawing(size=(dim_str, dim_str),
                                    viewBox='0 0 {0} {0}'.format(drawing_width))
         g = drawing.g(transform='translate({0} {0})'.format(drawing_width / 2))
         drawing.add(g)
@@ -326,7 +325,6 @@ class NEMA_5_20(NEMABase):
         prong_length = 0.260
         ground_prong_dims = 0.190
         
-        # width, crossbar_length, vertical_length, x=0, y=0, rotation=0
         self.conductors = {
             ConductorType.neutral: (
                 TConductor(slot_width, neutral_slot_height, neutral_slot_width,
