@@ -27,7 +27,7 @@ class ConductorType(Enum):
 class DConductor:
     """A conductor whose outline forms a "D" shape.
 
-    The curve of the "D" is done at the positive end of the narrowest
+    The curve of the "D" is done at the positive end of the longest
     dimension.  If the dimensions are equal, it is done at the positive
     end of the x dimension.  It may be repositioned by giving a `rotation`
     in degrees.
