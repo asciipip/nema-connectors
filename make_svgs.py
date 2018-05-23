@@ -15,7 +15,7 @@ class ConductorType(Enum):
     lineY = 'Line (Y)'
     lineZ = 'Line (Z)'
 
-class SquareConductor:
+class IConductor:
     def __init__(self, width, height, x=0, y=0):
         self.width = width
         self.height = height
@@ -211,12 +211,12 @@ class NEMA_1_15(NEMABase):
         
         self.conductors = {
             ConductorType.neutral: (
-                SquareConductor(slot_width, neutral_slot_height, x=conductor_spacing/2),
-                SquareConductor(prong_width, neutral_prong_height, x=-conductor_spacing/2)
+                IConductor(slot_width, neutral_slot_height, x=conductor_spacing/2),
+                IConductor(prong_width, neutral_prong_height, x=-conductor_spacing/2)
             ),
             ConductorType.lineX: (
-                SquareConductor(slot_width, line_slot_height, x=-conductor_spacing/2),
-                SquareConductor(prong_width, line_prong_height, x=conductor_spacing/2)
+                IConductor(slot_width, line_slot_height, x=-conductor_spacing/2),
+                IConductor(prong_width, line_prong_height, x=conductor_spacing/2)
             ),
         }
 
@@ -244,7 +244,7 @@ class NEMA_1_20(NEMABase):
             ),
             ConductorType.lineX: (
                 None,
-                SquareConductor(prong_width, line_height, x=conductor_spacing/2),
+                IConductor(prong_width, line_height, x=conductor_spacing/2),
             ),
         }
 
@@ -273,10 +273,10 @@ class NEMA_5_15(NEMABase):
         
         self.conductors = {
             ConductorType.neutral: (
-                SquareConductor(slot_width, neutral_slot_height,
-                                x=conductor_spacing/2, y=lower_offset),
-                SquareConductor(prong_width, neutral_prong_height,
-                                x=-conductor_spacing/2, y=lower_offset)
+                IConductor(slot_width, neutral_slot_height,
+                           x=conductor_spacing/2, y=lower_offset),
+                IConductor(prong_width, neutral_prong_height,
+                           x=-conductor_spacing/2, y=lower_offset)
             ),
             ConductorType.ground: (
                 DConductor(ground_slot_dims, ground_slot_dims,
@@ -284,10 +284,10 @@ class NEMA_5_15(NEMABase):
                 OConductor(ground_prong_dims, y=lower_offset - upper_offset),
             ),
             ConductorType.lineX: (
-                SquareConductor(slot_width, line_slot_height,
-                                x=-conductor_spacing/2, y=lower_offset),
-                SquareConductor(prong_width, line_prong_height,
-                                x=conductor_spacing/2, y=lower_offset)
+                IConductor(slot_width, line_slot_height,
+                           x=-conductor_spacing/2, y=lower_offset),
+                IConductor(prong_width, line_prong_height,
+                           x=conductor_spacing/2, y=lower_offset)
             ),
         }
 
@@ -322,8 +322,8 @@ class NEMA_5_20(NEMABase):
                 TConductor(slot_width, neutral_slot_height, neutral_slot_width,
                            x=receptacle_conductor_spacing/2, y=lower_offset,
                            rotation=90),
-                SquareConductor(prong_length, prong_width, y=lower_offset,
-                                x=plug_line_offset - plug_neutral_offset)
+                IConductor(prong_length, prong_width, y=lower_offset,
+                           x=plug_line_offset - plug_neutral_offset)
             ),
             ConductorType.ground: (
                 DConductor(ground_slot_dims, ground_slot_dims,
@@ -331,10 +331,10 @@ class NEMA_5_20(NEMABase):
                 OConductor(ground_prong_dims, y=lower_offset - upper_offset),
             ),
             ConductorType.lineX: (
-                SquareConductor(slot_width, line_slot_height,
-                                x=-receptacle_conductor_spacing/2, y=lower_offset),
-                SquareConductor(prong_width, prong_length,
-                                x=plug_line_offset, y=lower_offset)
+                IConductor(slot_width, line_slot_height,
+                           x=-receptacle_conductor_spacing/2, y=lower_offset),
+                IConductor(prong_width, prong_length,
+                           x=plug_line_offset, y=lower_offset)
             ),
         }
 
