@@ -24,6 +24,14 @@ class ConductorType(Enum):
     lineY = 'Line (Y)'
     lineZ = 'Line (Z)'
 
+CONDUCTOR_COLORS = {
+    ConductorType.ground: 'green',
+    ConductorType.neutral: 'gray',
+    ConductorType.lineX: 'black',
+    ConductorType.lineY: 'red',
+    ConductorType.lineZ: 'blue',
+}
+    
 class DConductor:
     """A conductor whose outline forms a "D" shape.
 
@@ -39,8 +47,12 @@ class DConductor:
         self.y = y
         self.rotation = rotation
 
-    def draw(self, drawing):
-        path = drawing.path(fill='black')
+    def draw(self, drawing, color='black'):
+        path = drawing.path(fill=color)
+        if color == 'white':
+            path['stroke'] = 'black'
+            path['stroke-width'] = OUTLINE_WIDTH
+            
         if self.rotation == 0:
             x_offset = self.x
             y_offset = self.y
@@ -75,10 +87,15 @@ class IConductor:
         self.x = x
         self.y = y
 
-    def draw(self, drawing):
-        return drawing.rect((self.x - self.width/2, self.y - self.height/2),
+    def draw(self, drawing, color='black'):
+        path = drawing.rect((self.x - self.width/2, self.y - self.height/2),
                             (self.width, self.height),
-                            fill='black')
+                            fill=color)
+        if color == 'white':
+            path['stroke'] = 'black'
+            path['stroke-width'] = OUTLINE_WIDTH
+            
+        return path
 
 class LConductor:
     """A conductor that forms roughly an "L" shape.
@@ -100,8 +117,9 @@ class LConductor:
         else:
             self.x_first = sweep_dir == '-'
 
-    def draw(self, drawing):
-        path = drawing.path(fill='none', stroke='black', stroke_width=self.width)
+    def draw(self, drawing, color='black'):
+        assert color != 'white', 'White L conductors not yet implemented.'
+        path = drawing.path(fill='none', stroke=color, stroke_width=self.width)
         path.push('M', self.start)
         if self.x_first:
             path.push('h', self.end[0] - self.start[0] - self.x_sign * self.width/2)
@@ -115,6 +133,7 @@ class LConductor:
             path.push('V', self.end[1])
         else:
             path.push('H', self.end[0])
+
         return path
 
 class OConductor:
@@ -124,8 +143,12 @@ class OConductor:
         self.x = x
         self.y = y
 
-    def draw(self, drawing):
-        return drawing.circle((self.x, self.y), self.radius, fill='black')
+    def draw(self, drawing, color='black'):
+        path = drawing.circle((self.x, self.y), self.radius, fill=color)
+        if color == 'white':
+            path['stroke'] = 'black'
+            path['stroke-width'] = OUTLINE_WIDTH
+        return path
 
 class TConductor:
     """A conductor whose shape is an upper-case "T".
@@ -144,8 +167,9 @@ class TConductor:
         self.y = y
         self.rotation = rotation
 
-    def draw(self, drawing):
-        path = drawing.path(fill='none', stroke='black', stroke_width=self.width)
+    def draw(self, drawing, color='black'):
+        assert color != 'white', 'White T conductors not yet implemented.'
+        path = drawing.path(fill='none', stroke=color, stroke_width=self.width)
         if self.rotation != 0:
             path['transform'] = 'rotate({} {},{})'.format(self.rotation, self.x, self.y)
         path.push('M', (self.x - self.crossbar_length/2, self.y))
@@ -174,8 +198,9 @@ class ArcConductor:
         else:
             self.angle_dir = '-'
 
-    def draw(self, drawing):
-        path = drawing.path(fill='none', stroke='black', stroke_width=self.width)
+    def draw(self, drawing, color='black'):
+        assert color != 'white', 'White arc conductors not yet implemented.'
+        path = drawing.path(fill='none', stroke=color, stroke_width=self.width)
         path.push('M', self.start)
         # Note that for our purposes we can assume we're always dealing
         # with the small arc, because there aren't any conductors that are
@@ -208,7 +233,7 @@ class ArcConductorWithHook:
             self.hook_width = hook_width
         self.hook_width = math.copysign(self.hook_width, hook_outer_offset)
 
-    def draw(self, drawing):
+    def draw(self, drawing, color='black'):
         outer_radius = self.radius + self.width/2
         inner_radius = self.radius - self.width/2
         
@@ -227,7 +252,10 @@ class ArcConductorWithHook:
         else:
             assert False
             
-        path = drawing.path(fill='black')
+        path = drawing.path(fill=color)
+        if color == 'white':
+            path['stroke'] = 'black'
+            path['stroke-width'] = OUTLINE_WIDTH
         path.push('M', (start_outer.real, start_outer.imag))
         path.push_arc((end_outer.real, end_outer.imag), 0, outer_radius,
                       large_arc=False, absolute=True,
@@ -264,8 +292,8 @@ class NEMABase:
             background['stroke-width'] = OUTLINE_WIDTH
         g.add(background)
         
-        for conductor in conductors.values():
-            g.add(conductor.draw(drawing))
+        for ctype, conductor in conductors.items():
+            g.add(conductor.draw(drawing, CONDUCTOR_COLORS[ctype]))
         
         return drawing
         
